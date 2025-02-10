@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Tambah Rencana</title>
+    <object th:include="~{fragments/common :: js}" th:remove="tag"></object>
+    <object th:include="~{fragments/fragment :: css}" th:remove="tag"></object>
+
+    <style>
+        .custom-select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23333" width="18px" height="18px"><path d="M7 10l5 5 5-5H7z"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 30px;
+        }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <div th:replace="~{fragments/sidebarf}" class="col-lg-3 col-md-4"></div>
+        <div class="col">
+
+            <div class="container py-lg-5">
+                <div class="card mx-lg-5">
+                    <form id="form-rencana" th:action="@{/rencana/create}" th:object="${rencanaDTO}" method="post">
+                        <div class="card-header text-center p-3">
+                            <h2>
+                                Tambah Rencana
+                            </h2>
+                            <input class="form-control" type="date" required="required" th:field="*{expectedDate}" />
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-borderless">
+                                <tbody>
+                                <tr>
+                                    <td><b>Nama Pengadaan</b></td>
+                                    <td><input class="form-control" type="text" required="required" placeholder="Masukkan nama pengadaan..." th:field="*{namaRencana}" /></td>
+                                </tr>
+                                <tr>
+                                    <td><b>Vendor</b></td>
+                                    <td>
+                                        <select class="form-control custom-select gap-2" name="kodeVendor" id="kodeVendor" th:field="*{vendor.kodeVendor}">
+                                            <option th:each="vendor: ${listVendorExisted}"
+                                                    th:value="${vendor.kodeVendor}" th:text="${vendor.namaVendor}"></option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                            <b> Barang Pengadaan </b>
+                            <br> <br>
+                            <table class="table table-bordered text-center">
+                                <thead class="table-dark">
+                                <tr>
+                                    <th scope="col">No.</th>
+                                    <th scope="col">Nama</th>
+                                    <th scope="col">Kuantitas</th>
+                                    <th scope="col">Aksi</th>
+                                </tr>
+                                </thead>
+                                <tbody id="container">
+                                <tr th:each="barang, iterationStatus : *{listBarangRencana}">
+                                    <td th:text="${iterationStatus.count}"></td>
+                                    <td>
+                                        <select class="form-control custom-select gap-2" th:field="*{listBarangRencana[__${iterationStatus.index}__].barang}">
+                                            <option th:each="barangExisting : ${listBarangExisted}"
+                                                    th:if="${barangExisting.vendorList.![kodeVendor].contains(kodeVendor)}"
+                                                    th:value="${barangExisting.kodeBarang}" th:text="${barangExisting.namaBarang}">
+                                            </option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <input type="number"
+                                               class="form-control kuantitas" min="1" placeholder="Masukkan jumlah barang..." th:field="*{listBarangRencana[__${iterationStatus.index}__].kuantitas}" />
+                                    </td>
+                                    <td>
+                                        <button th:value="${iterationStatus.index}" class="btn btn-danger" type="submit"
+                                                name="deleteRow" onclick="deleteRowAndSubmit(this)">Hapus</button>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                            <div class="text-right">
+                                <button class="my-4 ml-2 btn btn-warning text-white" name="addRow" onclick="return validateTambahBarang()">+ Tambah Barang</button>
+                            </div>
+                            <div class="text-center">
+                                <button type="button" onclick="validateForm()" class="btn btn-primary">Simpan</button>
+                            </div>
+                        </div>
+                        <input type="hidden" id="vendorKode" name="kodeVendor" />
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+<script>
+  function validateTambahBarang() {
+    var selectedVendor = document.getElementById("kodeVendor");
+    var kodeVendor = selectedVendor.options[selectedVendor.selectedIndex].value;
+    console.log("Selected kodeVendor:", kodeVendor);
+    document.getElementById("vendorKode").value = kodeVendor;
+
+    var inputs = document.querySelectorAll('.kuantitas');
+    var isValid = true;
+    inputs.forEach(function(input) {
+        if (input.value === "") {
+            isValid = false;
+        }
+    });
+    if (!isValid) {
+        alert("Kuantitas barang wajib diisi.");
+    }
+    return isValid;
+  }
+
+  function validateForm() {
+      var inputs = document.querySelectorAll('.kuantitas');
+      var isValid = true; 
+      inputs.forEach(function(input) {
+          if (input.value === "") {
+              isValid = false;
+          }
+      });
+      if (!isValid) {
+          alert("Kuantitas barang wajib diisi.");
+      } else {
+          document.getElementById("form-rencana").submit();
+      }
+  }
+
+    function deleteRowAndSubmit(button) {
+        var rowToDelete = button.getAttribute("th:value");
+        document.getElementById("vendorKode").value = document.getElementById("kodeVendor").value;
+        document.querySelector("#form-rencana [name='deleteRow'][value='" + rowToDelete + "']").click();
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        var kodeVendorSelect = document.getElementById("kodeVendor");
+
+        kodeVendorSelect.addEventListener("change", function() {
+            var container = document.getElementById("container");
+            
+            while (container.firstChild) {
+                container.removeChild(container.firstChild);
+            }
+            
+            var vendorKodeInput = document.getElementById("vendorKode");
+            vendorKodeInput.value = "";
+        });
+    });
+</script>
+
+</body>
+</html>
